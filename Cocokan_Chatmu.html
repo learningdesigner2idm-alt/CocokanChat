@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Cocokan Chatmu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .animate-in { animation: animIn 0.5s ease both; }
+    .fade-in { animation: fadeIn 0.7s ease both; }
+    .zoom-in { animation: zoomIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+    .zoom-in-90 { animation: zoomIn90 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+    .zoom-in-95 { animation: zoomIn95 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+    .zoom-in-50 { animation: zoomIn50 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+    .slide-in-from-bottom-10 { animation: slideUp10 0.6s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+    .slide-in-from-bottom-2 { animation: slideUp2 0.3s ease both; }
+    .duration-500 { animation-duration: 0.5s !important; }
+    .duration-700 { animation-duration: 0.7s !important; }
+    .duration-1000 { animation-duration: 1s !important; }
+    @keyframes animIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:none; } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes zoomIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+    @keyframes zoomIn90 { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
+    @keyframes zoomIn95 { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+    @keyframes zoomIn50 { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+    @keyframes slideUp10 { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:none; } }
+    @keyframes slideUp2 { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+    .animate-shake { animation: shake 0.3s ease-in-out 2; }
+    .pattern-dots { background-image: radial-gradient(#6366f115 2px, transparent 2px); background-size: 30px 30px; }
+    .delay-75 { animation-delay: 0.075s; }
+    .delay-150 { animation-delay: 0.15s; }
+    .delay-300 { animation-delay: 0.3s; }
+  </style>
+</head>
+<body class="bg-slate-50 overflow-x-hidden">
+  <div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── ICONS (SVG inline) ─────────────────────────────── */
+const Ic = ({d, size=20, cls="", fill="none", stroke="currentColor", sw=2}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke}
+    strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" className={cls}>
+    {Array.isArray(d) ? d.map((p,i) => <path key={i} d={p}/>) : <path d={d}/>}
+  </svg>
+);
+const CheckCircle2  = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M22 11.08V12a10 10 0 1 1-5.93-9.14","m9 11 3 3L22 4"]}/>;
+const AlertCircle   = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]}/>;
+const ArrowLeft     = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M19 12H5","m12 19-7-7 7-7"]}/>;
+const Heart         = ({size,className:cls,fill:f}) => <Ic size={size} cls={cls} fill={f||"none"} d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>;
+const Zap           = ({size,className:cls}) => <Ic size={size} cls={cls} d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>;
+const ChevronRight  = ({size,className:cls}) => <Ic size={size} cls={cls} d="m9 18 6-6-6-6"/>;
+const Coffee        = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M18 8h1a4 4 0 0 1 0 8h-1","M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z","M6 1v3","M10 1v3","M14 1v3"]}/>;
+const Clock         = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z","M12 6v6l4 2"]}/>;
+const Lightbulb     = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M15 14c.2-1 .7-1.7 1.5-2.5C17.9 10 19 8.6 19 7a7 7 0 1 0-14 0c0 1.6 1.1 3 2.5 4.5.8.8 1.3 1.5 1.5 2.5","M9 18h6","M10 22h4"]}/>;
+const Search        = ({size,className:cls}) => <Ic size={size} cls={cls} d={["m21 21-4.35-4.35","M11 3a8 8 0 1 0 0 16A8 8 0 0 0 11 3z"]}/>;
+const MoreVertical  = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z","M12 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z","M12 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"]}/>;
+const Phone         = ({size,className:cls}) => <Ic size={size} cls={cls} d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3-8.63A2 2 0 0 1 3.69 2h2.93a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.97-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>;
+const Video         = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M23 7l-7 5 7 5V7z","M1 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5z"]}/>;
+const Send          = ({size,className:cls}) => <Ic size={size} cls={cls} d={["m22 2-7 20-4-9-9-4 20-7z","M22 2 11 13"]}/>;
+const Hand          = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M18 11V6a2 2 0 0 0-4 0v5","M14 10V4a2 2 0 0 0-4 0v6","M10 10.5V6a2 2 0 0 0-4 0v8","M6 14a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h10.5a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2H18"]}/>;
+const BookOpen      = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z","M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"]}/>;
+const Calendar      = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M8 2v4","M16 2v4","M3 10h18","M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"]}/>;
+const Trophy        = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M6 9H4.5a2.5 2.5 0 0 1 0-5H6","M18 9h1.5a2.5 2.5 0 0 0 0-5H18","M4 22h16","M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22","M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22","M18 2H6v7a6 6 0 0 0 12 0V2z"]}/>;
+const Sparkles      = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M12 3l1.5 5H18l-4.5 3 1.5 5-4.5-3L6 16l1.5-5L3 8h4.5z","M5 3v4","M19 17v4","M3 5h4","M17 19h4"]}/>;
+const Star          = ({size,className:cls,fill:f}) => <Ic size={size} cls={cls} fill={f||"none"} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>;
+const PartyPopper   = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M5.8 11.3 2 22l10.7-3.79","M4 3h.01","M22 8h.01","M15 2h.01","M22 20h.01","m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10","m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v0c-.1.6-.7.99-1.31.83l-.43-.13","m11 2 .33.82c.34.86-.2 1.82-1.11 1.98v0c-.6.1-.99.7-.83 1.31l.13.43","m11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2z"]}/>;
+const LogOut        = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4","M16 17l5-5-5-5","M21 12H9"]}/>;
+const X             = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M18 6 6 18","m6 6 12 12"]}/>;
+const User          = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2","M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"]}/>;
+const Building2     = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z","M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2","M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2","M10 6h4","M10 10h4","M10 14h4","M10 18h4"]}/>;
+const Lock          = ({size,className:cls}) => <Ic size={size} cls={cls} d={["M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z","M7 11V7a5 5 0 0 1 10 0v4"]}/>;
+
+/* ── AUDIO ─────────────────────────────────────────── */
+const sounds = {
+  click:   'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
+  send:    'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3',
+  receive: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
+  win:     'https://assets.mixkit.co/active_storage/sfx/611/611-preview.mp3',
+  fail:    'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'
+};
+const playSound = (key) => {
+  const a = new Audio(sounds[key]);
+  a.volume = 0.35;
+  a.play().catch(() => {});
+};
+
+/* ── THEME HELPER ─────────────────────────────────── */
+const getCharacterTheme = (color) => ({
+  rose:    { border:'hover:border-rose-300',    badge:'bg-rose-50 text-rose-600 border-rose-100',       iconBtn:'group-hover:bg-rose-500',    accent:'text-rose-500',    shadow:'hover:shadow-rose-100'    },
+  sky:     { border:'hover:border-sky-300',     badge:'bg-sky-50 text-sky-600 border-sky-100',          iconBtn:'group-hover:bg-sky-500',     accent:'text-sky-500',     shadow:'hover:shadow-sky-100'     },
+  emerald: { border:'hover:border-emerald-300', badge:'bg-emerald-50 text-emerald-600 border-emerald-100', iconBtn:'group-hover:bg-emerald-500', accent:'text-emerald-500', shadow:'hover:shadow-emerald-100' },
+  amber:   { border:'hover:border-amber-300',   badge:'bg-amber-50 text-amber-600 border-amber-100',    iconBtn:'group-hover:bg-amber-500',   accent:'text-amber-500',   shadow:'hover:shadow-amber-100'   }
+}[color] || { border:'hover:border-rose-300', badge:'bg-rose-50 text-rose-600 border-rose-100', iconBtn:'group-hover:bg-rose-500', accent:'text-rose-500', shadow:'hover:shadow-rose-100' });
+
+/* ── AVATARS ─────────────────────────────────────── */
+const AvatarBambang = ({ size="sm" }) => {
+  const s = size==="sm" ? "w-12 h-12" : "w-24 h-24 sm:w-28 sm:h-28";
+  return (
+    <div className={`relative ${s} bg-rose-100 rounded-[2rem] flex items-center justify-center border-4 border-rose-300 overflow-hidden shrink-0 shadow-inner`}>
+      <div className="absolute top-1 w-full h-full bg-rose-400 rounded-full opacity-10"></div>
+      <div className="z-10 flex flex-col items-center scale-90 sm:scale-100">
+        <div className="flex gap-1.5 mb-1.5">
+          <div className="w-2 h-2 bg-slate-900 rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-slate-900 rounded-full animate-bounce delay-75"></div>
+        </div>
+        <div className="w-8 h-1 bg-slate-900 rounded-full"></div>
+        <Clock size={20} className="text-rose-600 mt-2 animate-pulse" />
+      </div>
+    </div>
+  );
+};
+const AvatarSarah = ({ size="sm" }) => {
+  const s = size==="sm" ? "w-12 h-12" : "w-24 h-24 sm:w-28 sm:h-28";
+  return (
+    <div className={`relative ${s} bg-sky-100 rounded-[2rem] flex items-center justify-center border-4 border-sky-300 overflow-hidden shrink-0 shadow-inner`}>
+      <div className="absolute top-1 w-full h-full bg-sky-400 rounded-full opacity-10"></div>
+      <div className="z-10 flex flex-col items-center scale-90 sm:scale-100">
+        <div className="flex gap-3 mb-1.5">
+          <div className="w-4 h-3 border-2 border-slate-900 rounded-sm"></div>
+          <div className="w-4 h-3 border-2 border-slate-900 rounded-sm"></div>
+        </div>
+        <Search size={20} className="text-sky-600 animate-pulse" />
+      </div>
+    </div>
+  );
+};
+const AvatarLaras = ({ size="sm" }) => {
+  const s = size==="sm" ? "w-12 h-12" : "w-24 h-24 sm:w-28 sm:h-28";
+  return (
+    <div className={`relative ${s} bg-emerald-100 rounded-[2rem] flex items-center justify-center border-4 border-emerald-300 overflow-hidden shrink-0 shadow-inner`}>
+      <div className="absolute top-1 w-full h-full bg-emerald-400 rounded-full opacity-10"></div>
+      <div className="z-10 flex flex-col items-center scale-90 sm:scale-100">
+        <Heart size={24} className="text-rose-400 animate-pulse mb-1" fill="#fb7185" />
+        <Coffee size={20} className="text-emerald-600" />
+      </div>
+    </div>
+  );
+};
+const AvatarRio = ({ size="sm" }) => {
+  const s = size==="sm" ? "w-12 h-12" : "w-24 h-24 sm:w-28 sm:h-28";
+  return (
+    <div className={`relative ${s} bg-amber-100 rounded-[2rem] flex items-center justify-center border-4 border-amber-300 overflow-hidden shrink-0 shadow-inner`}>
+      <div className="absolute top-1 w-full h-full bg-amber-400 rounded-full opacity-10"></div>
+      <div className="z-10 flex flex-col items-center scale-90 sm:scale-100">
+        <Lightbulb size={28} className="text-amber-500 animate-bounce delay-300" />
+      </div>
+    </div>
+  );
+};
+
+/* ── CHARACTERS ───────────────────────────────────── */
+const CHARACTERS = [
+  { id:'bambang', name:'Pak Bambang', role:'The Director',   avatar:<AvatarBambang size="lg"/>, mini:<AvatarBambang/>, color:'rose'    },
+  { id:'sarah',   name:'Bu Sarah',   role:'The Thinker',    avatar:<AvatarSarah   size="lg"/>, mini:<AvatarSarah/>,   color:'sky'     },
+  { id:'laras',   name:'Mbak Laras', role:'The Relater',    avatar:<AvatarLaras   size="lg"/>, mini:<AvatarLaras/>,   color:'emerald' },
+  { id:'rio',     name:'Mas Rio',    role:'The Socializer', avatar:<AvatarRio     size="lg"/>, mini:<AvatarRio/>,     color:'amber'   }
+];
+
+/* ── SCENARIOS ────────────────────────────────────── */
+const SCENARIOS = {
+  bambang: { steps: [
+    { narrative:"Manajemen menunggu laporan jam 10:00 tajam. Pak Bambang sedang rapat maraton. Ingat: Dia hanya peduli pada hasil.", question:"Langkah pertama: Kirim pesan WhatsApp.",
+      options:[
+        { type:'chat', text:"Pagi Pak, maaf mengganggu rapatnya. Ini laporan sudah selesai, kalau Bapak senggang mohon dibantu tanda tangannya ya Pak.", isCorrect:false, reply:"...", coaching:"Terlalu panjang! Pak Bambang butuh urgensi instan tanpa basa-basi." },
+        { type:'chat', text:"Pak, draf stok opname untuk Manajemen (Deadline 10:00) sudah siap. Izin minta tanda tangan Bapak di meja sekarang. Cukup cek kolom merah.", isCorrect:true, reply:"Ok. Taruh meja. 5 menit saya ke sana.", coaching:"Bagus! Anda menonjolkan deadline dan mempermudah tugasnya." }
+      ]
+    },
+    { narrative:"Waktu pukul 09:45. Pak Bambang keluar ruangan sambil menelepon seseorang dengan nada bicara cepat.", question:"Dia sudah di depan mejanya. Apa tindakan Anda?",
+      options:[
+        { type:'action', text:"Berdiri diam di samping mejanya sampai dia selesai menelepon agar tetap sopan.", isCorrect:false, reply:"(Dia mengabaikan Anda karena sibuk)", coaching:"Gagal! Pak Bambang menghargai orang proaktif. Menunggu pasif dianggap membuang waktu." },
+        { type:'action', text:"Menyodorkan pulpen dan tunjuk kolom tanda tangan sambil berbisik: 'Pak, ini untuk Manajemen jam 10'.", isCorrect:true, reply:"(Dia langsung tanda tangan tanpa memutus telepon)", coaching:"Tepat! Bagi Director, efisiensi lebih penting daripada sopan santun formal." }
+      ]
+    },
+    { narrative:"Tanda tangan didapat! Operasional mengabarkan ada revisi kecil. Anda punya waktu 10 menit lagi.", question:"Apa tindakan terakhir Anda?",
+      options:[
+        { type:'chat', text:"Pak, maaf ada revisi sedikit dari gudang, saya perbaiki dulu ya Pak sebelum saya kirim.", isCorrect:false, reply:"Kenapa baru sekarang? Tadi katanya sudah siap!", coaching:"Gagal! Jangan melaporkan masalah kecil jika bisa Anda bereskan sendiri dengan cepat." },
+        { type:'chat', text:"Laporan sudah dikirim ke Pusat, Pak. Aman. Terima kasih atas approval cepatnya.", isCorrect:true, reply:"Good. Lanjutkan.", coaching:"Sempurna! Dia hanya butuh tahu misinya sudah selesai." }
+      ]
+    }
+  ]},
+  sarah: { steps: [
+    { narrative:"Bu Sarah dari Finance baru saja menolak laporan rekan Anda. Dia butuh data presisi dan metodologi jelas.", question:"Anda perlu mengirim laporan realisasi anggaran. Bagaimana cara menyampaikannya?",
+      options:[
+        { type:'chat', text:"Bu Sarah, ini laporan anggarannya ya. Mohon dicek kalau ada yang selisih.", isCorrect:false, reply:"Tolong dicek sendiri dulu sesuai SOP!", coaching:"Sarah merasa Anda melempar tanggung jawab pengecekan kepadanya." },
+        { type:'chat', text:"Selamat pagi Bu Sarah. Terlampir laporan anggaran Maret. Saya sudah membagi per kategori dan melampirkan file perbandingan bulan lalu.", isCorrect:true, reply:"Ok, saya cek sore ini.", coaching:"Bagus! Tipe Analis menyukai struktur dan data pembanding." }
+      ]
+    },
+    { narrative:"Sore harinya, Sarah bertanya via WhatsApp: 'Angka operasional di Sheet 2 beda 500rb dengan Summary. Kenapa?'", question:"Bagaimana jawaban pesan Anda?",
+      options:[
+        { type:'chat', text:"Waduh, sepertinya ada rumus yang salah tarik Bu. Saya cek lagi ya secepatnya, mohon maaf ya Bu.", isCorrect:false, reply:"Pastikan dulu angkanya benar baru bicara ke saya.", coaching:"Gagal! Analis butuh kepastian teknis, bukan asumsi ragu-ragu." },
+        { type:'chat', text:"Mohon maaf Bu, selisih 500rb berasal dari biaya admin Vendor J yang baru masuk. Detailnya ada di baris 42. Sudah saya lampirkan recap terbarunya.", isCorrect:true, reply:"Penjelasan masuk akal. Saya terima. Teruskan.", coaching:"Sempurna! Memberikan alasan teknis spesifik sangat meyakinkan tipe Analis." }
+      ]
+    },
+    { narrative:"Bu Sarah bertanya tentang standar perhitungan yang Anda gunakan.", question:"Ini ujian terakhir memenangkan kepercayaannya. Apa jawaban Anda?",
+      options:[
+        { type:'chat', text:"Pakai standar yang biasa saja Bu, yang penting hasilnya keluar.", isCorrect:false, reply:"Kita tidak bisa pakai yang 'biasa' saja kalau ada regulasi baru.", coaching:"Salah! Mengabaikan standar adalah dosa besar bagi tipe Analis." },
+        { type:'chat', text:"Benar Bu, saya merujuk pada Memo Internal No. 45 soal standar baru. File referensinya juga sudah saya sertakan di email.", isCorrect:true, reply:"Bagus, teliti. Approved.", coaching:"Luar biasa! Menyertakan referensi resmi adalah kunci mutlak." }
+      ]
+    }
+  ]},
+  laras: { steps: [
+    { narrative:"Anda butuh Ruang Meeting A. Mbak Laras terlihat sangat sibuk merapikan tumpukan berkas.", question:"Mbak Laras tipe Relater yang menghargai harmoni. Bagaimana cara memintanya?",
+      options:[
+        { type:'chat', text:"Mbak Laras, urgent nih. Tolong booking Ruang A jam 1 ya buat tamu Pusat. Buruan ya Mbak.", isCorrect:false, reply:"Aduh mas, saya lagi repot banget...", coaching:"Gagal! Anda memperlakukannya seperti mesin pesanan." },
+        { type:'chat', text:"Halo Mbak Laras, semangat pagi! Aduh, kelihatannya lagi repot banget ya Mbak? Maaf ya Mbak ganggu sebentar saja...", isCorrect:true, reply:"Eh iya nih mas, hehe. Ada apa ya mas yang bisa dibantu?", coaching:"Berhasil! Empati membuatnya merasa dihargai sebagai manusia." }
+      ]
+    },
+    { narrative:"Ternyata Ruang A sudah di-booking oleh tim Sales. Mbak Laras tampak tidak enak hati menyampaikannya.", question:"Situasi sulit. Apa tindakan Anda selanjutnya?",
+      options:[
+        { type:'action', text:"Meminta ketegasan Laras: 'Yah Mbak, ini kan buat tamu Pusat. Masa Sales nggak bisa ngalah? Tolong dong diaturin'.", isCorrect:false, reply:"Saya nggak enak mas kalau harus ngusir mereka...", coaching:"Gagal! Memaksanya menciptakan konflik hanya akan membuatnya stres." },
+        { type:'action', text:"Mengajak kolaborasi: 'Waduh, Sales ya? Kira-kira kalau Mbak Laras yang minta tolong ke mereka untuk pindah ke Ruang B, apakah mungkin Mbak?'.", isCorrect:true, reply:"Sebentar ya mas, saya coba nego. Kalau saya yang minta biasanya mereka mau kok.", coaching:"Tepat! Anda memberikan kepercayaan padanya untuk menyelesaikan masalah dengan caranya." }
+      ]
+    },
+    { narrative:"Meeting bersama tamu Pusat berakhir dengan sukses besar! Tanpa bantuan Mbak Laras tadi, koordinasi ini pasti berantakan.", question:"Bagaimana cara Anda memberikan apresiasi terakhir kepada Mbak Laras?",
+      options:[
+        { type:'chat', text:"Oke Mbak, meeting sudah selesai ya. Makasih bantuannya.", isCorrect:false, reply:"Sama-sama.", coaching:"Terlalu dingin! Bagi tipe Relater, apresiasi yang datar membuat mereka merasa hanya dimanfaatkan." },
+        { type:'chat', text:"Mbak Laras! Barusan meetingnya sukses banget, tamu Pusat senang. Makasih banyak ya Mbak sudah dibantu tadi, Mbak penyelamat hari ini!", isCorrect:true, reply:"Wah, syukurlah kalau lancar mas! Senang bisa bantu. Kabari saja ya kalau butuh lagi!", coaching:"Sempurna! Tipe Relater sangat menghargai pengakuan tulus atas kontribusi mereka dalam tim." }
+      ]
+    }
+  ]},
+  rio: { steps: [
+    { narrative:"Mas Rio memaparkan ide kreatif namun abstrak. Anda butuh rincian biaya teknis untuk laporan manajemen.", question:"Rio sangat bangga dengan idenya. Bagaimana cara memintanya?",
+      options:[
+        { type:'chat', text:"Mas Rio, tolong rincian biayanya segera dikirim ya. Saya butuh angkanya buat laporan sore ini.", isCorrect:false, reply:"Iya nanti ya Mas, lagi banyak ide nih.", coaching:"Rio merasa ide kreatifnya dikecilkan menjadi sekadar angka membosankan." },
+        { type:'chat', text:"Mas Rio, presentasi tadi gokil banget! Biar ide luar biasa ini bisa disetujui Bos, boleh saya minta rincian teknisnya? Biar saya 'jual' ke atas!", isCorrect:true, reply:"Wuih! Siappp Mas! Emang butuh dukungan nih biar eksekusi.", coaching:"Berhasil! Memberikan panggung dan pengakuan membuatnya termotivasi." }
+      ]
+    },
+    { narrative:"Data Rio berantakan dan ada hitungan yang terlewat. Anda harus memperbaikinya tanpa merusak mood-nya.", question:"Apa tindakan Anda?",
+      options:[
+        { type:'action', text:"Mengirim kembali file dengan coretan merah: 'Mas, ini datanya masih berantakan. Tolong rapihin dulu ya sesuai standar'.", isCorrect:false, reply:"Yah Mas, yang penting substansinya kan...", coaching:"Kritik langsung pada detail teknis mematikan semangat kreatifnya." },
+        { type:'action', text:"Bertanya ke Rio: 'Detailnya makin kelihatan visinya Mas! Tapi gimana kalau bagian ini kita poles sedikit biar makin meyakinkan di depan Bos?'.", isCorrect:true, reply:"Bener juga Mas! Saya nggak kepikiran. Oke saya poles lagi!", coaching:"Hebat! Anda membungkus koreksi sebagai bagian dari penyempurnaan visi." }
+      ]
+    },
+    { narrative:"Laporan akhirnya disetujui. Rio terlihat sangat bangga.", question:"Apa respon terakhir Anda untuk menutup koordinasi ini?",
+      options:[
+        { type:'chat', text:"Bagus Mas, sekarang fokus ke eksekusi ya jangan banyak main-main lagi.", isCorrect:false, reply:"Kaku banget sih Mas...", coaching:"Gagal! Terlalu cepat kembali ke mode serius tanpa merayakan keberhasilan." },
+        { type:'chat', text:"Selamat Mas Rio! Idenya gol! Ayo kita kasih lihat ke tim lain hasil kolaborasi kita ini. Mas emang ahlinya deh!", isCorrect:true, reply:"Hahaha! Siap Mas! Kita gas pol!", coaching:"Sempurna! Merayakan keberhasilan bersama menjaga loyalitas tipe Socializer." }
+      ]
+    }
+  ]}
+};
+
+/* ── APP ─────────────────────────────────────────── */
+const App = () => {
+  const [gameState, setGameState]         = useState('login');
+  const [playerName, setPlayerName]       = useState('');
+  const [selectedChar, setSelectedChar]   = useState(null);
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const [chatHistory, setChatHistory]     = useState([]);
+  const [isTyping, setIsTyping]           = useState(false);
+  const [score, setScore]                 = useState(0);
+  const [completedChars, setCompletedChars] = useState([]);
+  const [isGameOver, setIsGameOver]       = useState(false);
+  const [isSuccess, setIsSuccess]         = useState(false);
+  const [pulangWarning, setPulangWarning] = useState(null);
+  const scrollRef = useRef(null);
+
+  const today = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [chatHistory, isTyping]);
+
+  const handleChoice = (option) => {
+    playSound('send');
+    const newMsgs = [];
+    if (option.type === 'action') {
+      const dMatch = option.text.match(/[''"](.*?)[''""]/);
+      if (dMatch) {
+        const actionDesc = option.text.replace(/[''""].*?[''""]/,'').replace(/[:：]/g,'').trim();
+        if (actionDesc) newMsgs.push({ type:'action_taken', text:actionDesc });
+        newMsgs.push({ type:'user', text:dMatch[1] });
+      } else {
+        newMsgs.push({ type:'action_taken', text:option.text });
+      }
+    } else {
+      newMsgs.push({ type:'user', text:option.text });
+    }
+    setChatHistory(prev => [...prev, ...newMsgs]);
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      playSound('receive');
+      const charReply   = { type:'char',     text:option.reply                                   };
+      const coachingMsg = { type:'coaching', text:option.coaching, isCorrect:option.isCorrect     };
+      setChatHistory(prev => [...prev, charReply, coachingMsg]);
+      if (option.isCorrect) {
+        const nextStep = currentStepIdx + 1;
+        if (nextStep < SCENARIOS[selectedChar.id].steps.length) {
+          setCurrentStepIdx(nextStep);
+        } else {
+          setScore(prev => prev + 25);
+          setCompletedChars(prev => [...prev, selectedChar.id]);
+          setIsSuccess(true);
+          setIsGameOver(true);
+          playSound('win');
+        }
+      } else {
+        setIsSuccess(false);
+        setIsGameOver(true);
+        playSound('fail');
+      }
+    }, 1200);
+  };
+
+  const startChat = (char) => {
+    playSound('click');
+    setSelectedChar(char);
+    setCurrentStepIdx(0);
+    setChatHistory([{ type:'system', text:`Misi Koordinasi: ${char.name}` }]);
+    setGameState('chat');
+    setIsGameOver(false);
+    setIsSuccess(false);
+  };
+
+  const handlePulangClick = () => {
+    const remaining = CHARACTERS.filter(c => !completedChars.includes(c.id));
+    if (remaining.length > 0) {
+      playSound('fail');
+      setPulangWarning(`Eits! Kamu belum bisa pulang. Kamu belum menyelesaikan koordinasi dengan: ${remaining.map(c=>c.name).join(', ')}. Selesaikan dulu ya!`);
+    } else {
+      playSound('win');
+      setGameState('end');
+    }
+  };
+
+  /* ── LOGIN ─── */
+  if (gameState === 'login') return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-100 flex items-center justify-center p-4 overflow-hidden relative">
+      <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-indigo-200 rounded-full blur-[100px] opacity-40"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-sky-200 rounded-full blur-[100px] opacity-40"></div>
+      <div className="max-w-md w-full z-10 animate-in fade-in zoom-in duration-700">
+        <div className="bg-white p-8 sm:p-12 rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.08)] border-2 border-white relative overflow-hidden text-center text-slate-800">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-sky-400"></div>
+          <div className="bg-indigo-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-sm text-indigo-600">
+            <Building2 size={40} />
+          </div>
+          <h1 className="text-3xl font-black mb-2 tracking-tight uppercase">Cocokan Chatmu</h1>
+          <p className="text-slate-500 font-bold text-sm mb-10 tracking-widest uppercase opacity-70">Masuk untuk Memulai Sesi</p>
+          <div className="space-y-6 text-left text-slate-800">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest ml-1">Masukan Nama Lengkap</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                  <User size={20} />
+                </div>
+                <input type="text" value={playerName} onChange={e => setPlayerName(e.target.value)}
+                  onKeyDown={e => e.key==='Enter' && playerName.trim() && (playSound('click'), setGameState('intro'))}
+                  placeholder="Nama Kamu..."
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-700 focus:bg-white focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-300"/>
+              </div>
+            </div>
+            <button disabled={!playerName.trim()} onClick={() => { playSound('click'); setGameState('intro'); }}
+              className={`w-full py-5 rounded-[1.5rem] font-black text-xl transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95 ${playerName.trim() ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'}`}>
+              MASUK KANTOR <ChevronRight size={24} />
+            </button>
+          </div>
+          <div className="mt-8 flex items-center justify-center gap-2 text-slate-300">
+            <Lock size={12} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Secure Session • 2025</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── INTRO ─── */
+  if (gameState === 'intro') return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-sky-100 flex items-center justify-center p-4 sm:p-8 overflow-hidden relative">
+      <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10 animate-in fade-in slide-in-from-bottom-10 duration-1000 text-slate-800">
+        <div className="text-left space-y-6 px-4">
+          <div className="inline-flex items-center gap-2 bg-white/90 border border-amber-200 px-4 py-2 rounded-full text-amber-700 text-sm font-bold uppercase tracking-widest shadow-sm">
+            <Sparkles size={16} className="text-amber-500" /> LMS Interactive Learning
+          </div>
+          <h1 className="text-5xl sm:text-7xl font-black text-slate-800 leading-[0.95] tracking-tighter">
+            COCOKAN <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600">CHATMU.</span>
+          </h1>
+          <p className="text-slate-500 text-lg sm:text-xl font-bold leading-relaxed max-w-md">
+            Halo <span className="text-indigo-600 font-black">{playerName}</span>! Asah ketajaman radarmu untuk berkolaborasi tanpa hambatan di lingkungan kantor.
+          </p>
+        </div>
+        <div className="relative px-2">
+          <div className="bg-white p-8 sm:p-10 rounded-[2.5rem] border-2 border-white shadow-[0_30px_60px_rgba(0,0,0,0.06)] relative overflow-hidden text-slate-800">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+            <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shadow-sm text-indigo-600"><Calendar size={24}/></div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Status Hari Ini</p>
+                  <p className="text-slate-800 font-black text-base">{today}</p>
+                </div>
+              </div>
+              <div className="px-3 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-wider">Aktif</div>
+            </div>
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-slate-800 text-2xl font-black tracking-tight">Tantangan Kantor</h3>
+                <p className="text-sm leading-relaxed text-slate-500">Meja kerjamu sudah menanti. Kopi masih hangat, namun deretan tugas mulai masuk. Berbagai karakter rekan kerja menunggu cara komunikasimu yang paling taktis.</p>
+              </div>
+              <button onClick={() => { playSound('click'); setGameState('home'); }}
+                className="group w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[1.5rem] font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3">
+                MULAI SESI <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform"/>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── HOME ─── */
+  if (gameState === 'home') return (
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-amber-50 px-4 py-8 sm:py-16 fade-in relative overflow-hidden text-slate-800">
+      {pulangWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-4 border-rose-100 max-w-sm w-full text-center animate-shake relative text-slate-800">
+            <button onClick={() => { playSound('click'); setPulangWarning(null); }} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={20}/></button>
+            <div className="bg-rose-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner text-rose-500"><AlertCircle size={32}/></div>
+            <h3 className="text-xl font-black mb-3 uppercase tracking-tight">Belum Bisa Pulang!</h3>
+            <p className="text-slate-500 font-bold leading-relaxed mb-6">{pulangWarning}</p>
+            <button onClick={() => { playSound('click'); setPulangWarning(null); }} className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black text-lg transition-all active:scale-95 shadow-lg shadow-rose-200">OKE, SIAP!</button>
+          </div>
+        </div>
+      )}
+      <header className="text-center mb-12 relative z-10">
+        <h1 className="text-4xl sm:text-6xl font-black mb-3 tracking-tighter uppercase">
+          COCOKAN <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600">CHATMU</span>
+        </h1>
+        <p className="text-slate-500 font-black text-lg sm:text-xl italic max-w-2xl mx-auto">
+          "Halo <span className="text-indigo-600 not-italic font-black">{playerName}</span>! Selamat bekerja, pilih rekan koordinasimu dulu!"
+        </p>
+        <div className="mt-10 flex justify-center gap-4 sm:gap-6">
+          <div className="bg-white px-5 py-3 rounded-[1.5rem] shadow-sm border-2 border-slate-50 flex items-center gap-3 hover:scale-105 transition-transform">
+            <div className="bg-amber-100 p-2 rounded-xl text-amber-500"><Trophy size={24}/></div>
+            <span className="font-black text-2xl">{score}</span>
+          </div>
+          <div className="bg-white px-5 py-3 rounded-[1.5rem] shadow-sm border-2 border-slate-50 flex items-center gap-3 hover:scale-105 transition-transform text-indigo-500">
+            <CheckCircle2 size={24}/>
+            <span className="font-black text-2xl text-slate-800">{completedChars.length}/4</span>
+          </div>
+        </div>
+      </header>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 px-4 mb-16 text-slate-800">
+        {CHARACTERS.map((char) => {
+          const theme = getCharacterTheme(char.color);
+          const isDone = completedChars.includes(char.id);
+          return (
+            <button key={char.id} onClick={() => !isDone && startChat(char)}
+              className={`relative group p-8 rounded-[3rem] border-4 transition-all flex flex-col items-center text-center gap-5 ${
+                isDone ? 'bg-white/60 border-slate-100 opacity-80 cursor-default shadow-none'
+                : `bg-white border-white ${theme.border} shadow-[0_15px_40px_rgba(0,0,0,0.06)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.1)] hover:-translate-y-4 hover:rotate-2 active:scale-95`
+              }`}>
+              <div className="transition-transform group-hover:scale-110 duration-500">{char.avatar}</div>
+              <div className="space-y-1 text-slate-700">
+                <h3 className="text-2xl font-black">{char.name}</h3>
+                <div className={`inline-block px-3 py-1 rounded-full font-black text-[10px] tracking-widest uppercase border ${theme.badge}`}>{char.role}</div>
+              </div>
+              {isDone
+                ? <div className="absolute -top-4 -right-4 bg-yellow-400 text-white p-3 rounded-2xl shadow-lg border-4 border-white rotate-12 animate-in zoom-in-50"><Star size={24} fill="white"/></div>
+                : <div className={`mt-2 w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 ${theme.iconBtn} group-hover:text-white transition-all shadow-sm`}><ChevronRight size={24}/></div>
+              }
+            </button>
+          );
+        })}
+      </div>
+      <div className="max-w-6xl mx-auto flex justify-center relative z-10">
+        <button onClick={handlePulangClick} className="group flex items-center gap-3 bg-white px-8 py-4 rounded-full border-2 border-slate-200 shadow-md hover:border-rose-400 hover:shadow-rose-100 transition-all active:scale-95 text-slate-800">
+          <div className="bg-rose-50 p-2 rounded-full group-hover:bg-rose-500 transition-colors text-rose-500 group-hover:text-white"><LogOut size={20}/></div>
+          <span className="font-black text-slate-600 group-hover:text-rose-600 transition-colors tracking-tight uppercase text-xs">Langsung Pulang Kerja</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ── CHAT ─── */
+  if (gameState === 'chat') {
+    const scenario = SCENARIOS[selectedChar.id];
+    const currentStep = scenario.steps[currentStepIdx];
+    return (
+      <div className="max-w-md mx-auto h-screen flex flex-col bg-white shadow-2xl overflow-hidden sm:rounded-[2.5rem] sm:border-8 sm:border-slate-800 relative animate-in slide-in-from-bottom-10 duration-500 text-slate-800">
+        {/* Header */}
+        <div className="bg-white p-4 text-slate-800 flex items-center justify-between shadow-sm z-20 shrink-0 border-b border-slate-100">
+          <div className="flex items-center gap-3 text-slate-800">
+            <button onClick={() => { playSound('click'); setGameState('home'); }} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400"><ArrowLeft size={20}/></button>
+            <div className="relative">{selectedChar.mini}<div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div></div>
+            <div>
+              <h2 className="font-black leading-tight text-sm sm:text-base text-slate-800">{selectedChar.name}</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Online • {selectedChar.role}</p>
+            </div>
+          </div>
+          <div className="flex gap-4 text-slate-300"><Video size={20} className="hidden sm:block"/><Phone size={20}/><MoreVertical size={20}/></div>
+        </div>
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#f8fafc] pattern-dots">
+          {chatHistory.map((msg, i) => (
+            <div key={i} className={`flex ${msg.type==='user' ? 'justify-end' : msg.type==='action_taken' ? 'justify-center' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
+              {msg.type==='system'      && <div className="mx-auto bg-sky-100 text-sky-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-4 shadow-sm border border-sky-200">{msg.text}</div>}
+              {msg.type==='action_taken'&& <div className="mx-auto bg-amber-100 text-amber-800 px-6 py-2 rounded-xl text-xs font-black italic shadow-sm border border-amber-200 flex items-center gap-2 text-center leading-tight max-w-[90%]"><Hand size={12}/>{msg.text}</div>}
+              {msg.type==='user'        && <div className="bg-indigo-600 text-white p-4 rounded-[1.5rem] rounded-tr-none shadow-md max-w-[85%] text-sm font-bold">{msg.text}</div>}
+              {msg.type==='char'        && <div className="bg-white p-4 rounded-[1.5rem] rounded-tl-none shadow-sm max-w-[85%] text-sm font-bold border border-slate-100 text-slate-700">{msg.text}</div>}
+              {msg.type==='coaching'    && (
+                <div className={`mt-2 w-full flex flex-col items-center gap-2 ${msg.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  <div className={`px-5 py-4 rounded-2xl border-2 flex items-start gap-3 text-xs font-black w-full shadow-md ${msg.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                    {msg.isCorrect ? <CheckCircle2 size={20} className="shrink-0 mt-0.5"/> : <AlertCircle size={20} className="shrink-0 mt-0.5 text-rose-500"/>}
+                    <p className="leading-relaxed">{msg.text}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white px-4 py-2 rounded-full shadow-sm border border-slate-50 flex gap-1.5 items-center">
+                <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce delay-75"></div>
+                <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce delay-150"></div>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Input / Options */}
+        <div className="p-4 bg-white border-t border-slate-100 z-20 shadow-[0_-15px_30px_rgba(0,0,0,0.03)] text-slate-800">
+          {!isGameOver && !isTyping ? (
+            <div className="space-y-4">
+              <div className="bg-indigo-50 p-5 rounded-[1.5rem] border-2 border-indigo-100 flex items-start gap-4 animate-in fade-in duration-500 shadow-inner">
+                <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><BookOpen size={20}/></div>
+                <p className="text-xs text-indigo-900 leading-relaxed font-black italic">{currentStep.narrative}</p>
+              </div>
+              <div className="flex items-center gap-2 py-1">
+                <div className="h-[2px] flex-1 bg-slate-100"></div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 text-center">Keputusan Taktis</p>
+                <div className="h-[2px] flex-1 bg-slate-100"></div>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {currentStep.options.map((opt, i) => {
+                  const isChatMode = opt.type==='chat' || opt.text.includes('"') || opt.text.includes("'") || opt.text.includes('\u201c');
+                  return (
+                    <button key={i} onClick={() => handleChoice(opt)}
+                      className={`w-full text-left p-5 rounded-2xl border-2 transition-all text-xs font-black leading-tight flex items-center justify-between group active:scale-95 shadow-sm ${
+                        isChatMode
+                          ? 'border-indigo-100 bg-white hover:border-indigo-500 hover:bg-indigo-50 text-indigo-900'
+                          : 'border-amber-200 bg-amber-50 hover:border-amber-500 hover:bg-amber-100 text-amber-900'
+                      }`}>
+                      <span className="flex-1">{opt.text}</span>
+                      <div className={`p-2 rounded-xl transition-colors shrink-0 ml-2 ${isChatMode ? 'bg-indigo-100 group-hover:bg-indigo-500 text-indigo-600' : 'bg-amber-100 group-hover:bg-amber-500 text-amber-600'}`}>
+                        {isChatMode ? <Send size={16} className="group-hover:text-white"/> : <Zap size={16} className="group-hover:text-white"/>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : isGameOver ? (
+            <div className="text-center p-4 animate-in zoom-in-95">
+              <h3 className={`font-black text-2xl mb-4 tracking-tight ${isSuccess ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isSuccess ? 'KOORDINASI MANTAP!' : 'MISI TERHAMBAT!'}
+              </h3>
+              <button onClick={() => { playSound('click'); isSuccess ? setGameState('home') : startChat(selectedChar); }}
+                className={`w-full py-5 rounded-[1.5rem] text-white font-black text-lg shadow-xl transition-all active:scale-95 ${
+                  isSuccess ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-100'
+                }`}>
+                {isSuccess ? 'Lanjut Cari Rekan' : 'Coba Lagi Sesi Ini'}
+              </button>
+            </div>
+          ) : (
+            <div className="h-14 flex items-center justify-center text-slate-300 italic text-sm font-black animate-pulse">
+              {selectedChar.name} sedang mengetik balasan...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── END ─── */
+  if (gameState === 'end') return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center p-6 sm:p-10 fade-in overflow-hidden relative">
+      <div className="bg-white p-10 sm:p-16 rounded-[4rem] shadow-2xl text-center max-w-2xl w-full border-b-[12px] border-indigo-200 relative z-10 animate-in zoom-in-90 text-slate-800">
+        <div className="bg-yellow-100 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 -rotate-12 shadow-lg text-yellow-600"><Trophy size={48}/></div>
+        <h2 className="text-4xl sm:text-5xl font-black mb-6 tracking-tighter uppercase">MISI SELESAI!</h2>
+        <p className="text-2xl sm:text-3xl text-indigo-600 font-black italic leading-tight mb-10">
+          "Hore {playerName}! Akhirnya kamu bisa pulang kerja dengan bahagia tanpa banyak drama."
+        </p>
+        <div className="p-6 bg-slate-50 rounded-3xl mb-10 border-2 border-indigo-50">
+          <p className="text-slate-500 font-bold text-slate-700">Skor Akhirmu: <span className="text-indigo-600 text-3xl font-black">{score}</span></p>
+        </div>
+        <button onClick={() => window.location.reload()}
+          className="px-14 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2.5rem] font-black text-xl shadow-2xl transition-all hover:scale-105 active:scale-95 uppercase tracking-widest">
+          MAIN LAGI
+        </button>
+      </div>
+    </div>
+  );
+
+  return null;
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
